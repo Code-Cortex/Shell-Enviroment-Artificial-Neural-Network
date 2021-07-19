@@ -81,7 +81,7 @@ def term_interact():
         input_data = term_out + ' ' + str(Path.cwd()) + '> ' + cmd
         print(input_data[-1], end='', flush=True)
         if prev_cmd:
-            if prev_cmd[-1] != cmd[-1]:
+            if cmd[-1] not in prev_cmd:
                 fitness[model_num] += variety_reward
         prev_cmd = cmd
         if not init:
