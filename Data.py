@@ -26,10 +26,10 @@ nb_actions = 96
 model_num = 0
 
 # training adjustments
-total_models = 50
+total_models = 32
 starting_fitness = 0
 # maximum and minimum percentage mutated
-mutation_max = 25
+mutation_max = 85
 mutation_min = 15
 
 # variable assignment
@@ -194,7 +194,7 @@ while True:
                     best_weights = current_pool[select].get_weights()
             if mutation_rate < mutation_min:
                 if updated:
-                    mutation_rate += .01
+                    mutation_rate = mutation_min
             if mutation_rate > mutation_max:
                 if not updated:
                     mutation_rate -= .01
