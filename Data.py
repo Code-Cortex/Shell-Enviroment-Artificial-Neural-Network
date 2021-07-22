@@ -26,7 +26,7 @@ nb_actions = 96
 model_num = 0
 
 # training adjustments
-total_models = 32
+total_models = 24
 starting_fitness = 0
 # maximum and minimum percentage mutated
 mutation_max = 85
@@ -35,7 +35,7 @@ mutation_min = 15
 # variable assignment
 new_weights = []
 current_pool = []
-prev_pool = []
+prev_weights = []
 fitness = []
 init = True
 cmd_in = True
@@ -192,7 +192,9 @@ while True:
                     updated = True
                     highest_fitness = fitness[select]
             if updated:
-                prev_pool = current_pool
+                prev_weights = []
+                for select in range(total_models):
+                    prev_weights.append(current_pool[select].get_weights())
                 mutation_rate = mutation_min
                 for select in range(total_models // 2):
                     cross_over_weights = model_crossover()
@@ -208,8 +210,14 @@ while True:
             else:
                 if mutation_rate > mutation_max:
                     mutation_rate -= .01
-                current_pool = prev_pool
+                for select in range(total_models):
+                    prev_mutated = model_mutate(prev_weights[select])
+                    new_weights.append(prev_mutated)
+                for select in range(len(new_weights)):
+                    fitness[select] = starting_fitness
+                    current_pool[select].set_weights(new_weights[select])
                 cleanup()
+                save_pool()
 
     except Exception as e:
         logfile = Path('error_log.txt')
