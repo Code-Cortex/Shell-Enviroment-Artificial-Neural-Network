@@ -34,7 +34,6 @@ mutation_min = 15
 
 # variable assignment
 new_weights = []
-best_weights = []
 current_pool = []
 fitness = []
 init = True
