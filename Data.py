@@ -35,6 +35,7 @@ mutation_min = 15
 # variable assignment
 new_weights = []
 current_pool = []
+prev_pool = []
 fitness = []
 init = True
 cmd_in = True
@@ -191,22 +192,24 @@ while True:
                     updated = True
                     highest_fitness = fitness[select]
             if updated:
+                prev_pool = current_pool
                 mutation_rate = mutation_min
-            if mutation_rate > mutation_max:
-                if not updated:
+                for select in range(total_models // 2):
+                    cross_over_weights = model_crossover()
+                    mutated1 = model_mutate(cross_over_weights[0])
+                    mutated2 = model_mutate(cross_over_weights[1])
+                    new_weights.append(mutated1)
+                    new_weights.append(mutated2)
+                for select in range(len(new_weights)):
+                    fitness[select] = starting_fitness
+                    current_pool[select].set_weights(new_weights[select])
+                cleanup()
+                save_pool()
+            else:
+                if mutation_rate > mutation_max:
                     mutation_rate -= .01
-            for select in range(total_models // 2):
-                cross_over_weights = model_crossover()
-                mutated1 = model_mutate(cross_over_weights[0])
-                mutated2 = model_mutate(cross_over_weights[1])
-
-                new_weights.append(mutated1)
-                new_weights.append(mutated2)
-            for select in range(len(new_weights)):
-                fitness[select] = starting_fitness
-                current_pool[select].set_weights(new_weights[select])
-            cleanup()
-            save_pool()
+                current_pool = prev_pool
+                cleanup()
 
     except Exception as e:
         logfile = Path('error_log.txt')
