@@ -191,7 +191,6 @@ while True:
                 if fitness[select] >= highest_fitness:
                     updated = True
                     highest_fitness = fitness[select]
-                    best_weights = current_pool[select].get_weights()
             if updated:
                 mutation_rate = mutation_min
             if mutation_rate > mutation_max:
@@ -199,8 +198,6 @@ while True:
                     mutation_rate -= .01
             for select in range(total_models // 2):
                 cross_over_weights = model_crossover()
-                if not updated:
-                    cross_over_weights[1] = best_weights
                 mutated1 = model_mutate(cross_over_weights[0])
                 mutated2 = model_mutate(cross_over_weights[1])
 
