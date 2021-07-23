@@ -46,10 +46,9 @@ term_out = ''
 prev_cmd = ''
 error_count = 0
 global e
-mutation_rate = round(((mutation_max + mutation_min) / 2) / 100, 2)
 mutation_max = round(1 - (mutation_max / 100), 2)
 mutation_min = round(1 - (mutation_min / 100), 2)
-
+mutation_rate = mutation_min
 
 def term_interact():
     global term_out, cmd, prev_cmd
