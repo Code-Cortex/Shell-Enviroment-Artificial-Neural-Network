@@ -250,7 +250,7 @@ while True:
                     else:
                         aux_parent2 -= 1
 
-                for select in range(total_models):
+                for select in range(total_models // 2):
                     aux_crossover_weights = aux_crossover()
                     aux_mutated1 = model_mutate(aux_crossover_weights[0])
                     aux_mutated2 = model_mutate(aux_crossover_weights[1])
