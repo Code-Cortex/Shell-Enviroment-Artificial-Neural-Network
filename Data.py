@@ -150,6 +150,10 @@ def cleanup():
         del mutated1
     if 'mutated2' in globals():
         del mutated2
+    if 'parent1' in globals():
+        del parent1
+    if 'parent2' in globals():
+        del parent2
     if 'aux_mutated1' in globals():
         del aux_mutated1
     if 'aux_mutated2' in globals():
@@ -158,7 +162,8 @@ def cleanup():
         del cross_over_weights
     if 'aux_crossover_weights' in globals():
         del aux_crossover_weights
-    del new_weights, aux_weights, parent1, parent2, prediction, action, enc_ascii
+        
+    del new_weights, aux_weights, prediction, action, enc_ascii
     new_weights = []
     aux_weights = []
     clear_session()
