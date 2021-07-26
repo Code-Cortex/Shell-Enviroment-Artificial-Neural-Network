@@ -150,10 +150,6 @@ def cleanup():
         del mutated1
     if 'mutated2' in globals():
         del mutated2
-    if 'parent1' in globals():
-        del parent1
-    if 'parent2' in globals():
-        del parent2
     if 'aux_mutated1' in globals():
         del aux_mutated1
     if 'aux_mutated2' in globals():
@@ -162,8 +158,7 @@ def cleanup():
         del cross_over_weights
     if 'aux_crossover_weights' in globals():
         del aux_crossover_weights
-        
-    del new_weights, aux_weights, prediction, action, enc_ascii
+    del new_weights, aux_weights, parent1, parent2, prediction, action, enc_ascii
     new_weights = []
     aux_weights = []
     clear_session()
@@ -211,30 +206,26 @@ while True:
                     continue
             model_num = 0
 
+            parent1 = random.randint(0, total_models - 1)
+            parent2 = random.randint(0, total_models - 1)
+
+            for i in range(total_models):
+                if fitness[i] >= fitness[parent1]:
+                    parent1 = i
+
+            for j in range(total_models):
+                if j != parent1:
+                    if fitness[j] >= fitness[parent2]:
+                        parent2 = j
             updated = False
             for select in range(total_models):
                 if fitness[select] >= highest_fitness:
                     updated = True
                     highest_fitness = fitness[select]
             if updated:
-                parent1 = random.randint(0, total_models - 1)
-                parent2 = random.randint(0, total_models - 1)
-
-                for i in range(total_models):
-                    if fitness[i] >= fitness[parent1]:
-                        parent1 = i
-
-                for j in range(total_models):
-                    if j != parent1:
-                        if fitness[j] >= fitness[parent2]:
-                            parent2 = j
-
                 prev_weights = []
                 for select in range(total_models):
                     prev_weights.append(current_pool[select].get_weights())
-                aux_parent1 = parent1
-                aux_parent2 = parent2
-
                 mutation_rate = mutation_min
                 for select in range(total_models // 2):
                     cross_over_weights = model_crossover()
@@ -250,6 +241,15 @@ while True:
             else:
                 if mutation_rate > mutation_max:
                     mutation_rate -= .01
+
+                aux_parent1 = random.randint(0, total_models - 1)
+                aux_parent2 = random.randint(0, total_models - 1)
+                if aux_parent1 == aux_parent2:
+                    if aux_parent2 + 1 < total_models:
+                        aux_parent2 += 1
+                    else:
+                        aux_parent2 -= 1
+
                 for select in range(total_models // 2):
                     aux_crossover_weights = aux_crossover()
                     aux_mutated1 = model_mutate(aux_crossover_weights[0])
