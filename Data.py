@@ -192,15 +192,14 @@ while True:
 
             parent1 = random.randint(0, total_models - 1)
             parent2 = random.randint(0, total_models - 1)
-
             for i in range(total_models):
                 if fitness[i] >= fitness[parent1]:
                     parent1 = i
-
             for j in range(total_models):
                 if j != parent1:
                     if fitness[j] >= fitness[parent2]:
                         parent2 = j
+                        
             updated = False
             for select in range(total_models):
                 if fitness[select] >= highest_fitness:
@@ -212,6 +211,7 @@ while True:
             else:
                 if mutation_rate > mutation_max:
                     mutation_rate -= .01
+                    
             for select in range(total_models // 2):
                 cross_over_weights = model_crossover()
                 if not updated:
@@ -220,6 +220,7 @@ while True:
                 mutated2 = model_mutate(cross_over_weights[1])
                 new_weights.append(mutated1)
                 new_weights.append(mutated2)
+                
             for select in range(len(new_weights)):
                 fitness[select] = starting_fitness
                 current_pool[select].set_weights(new_weights[select])
