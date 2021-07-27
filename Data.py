@@ -146,7 +146,7 @@ def aux_crossover():
 
 def cleanup():
     global mutated1, mutated2, aux_mutated1, aux_mutated2, new_weights, aux_weights, parent1, parent2
-    global cross_over_weights, prediction, action, enc_ascii, aux_crossover_weights, aux_parent1, aux_parent2
+    global cross_over_weights, prediction, action, enc_ascii, aux_crossover_weights
     if 'mutated1' in globals():
         del mutated1
     if 'mutated2' in globals():
