@@ -155,10 +155,6 @@ def cleanup():
         del parent1
     if 'parent2' in globals():
         del parent2
-    if 'aux_parent1' in globals():
-        del aux_parent1
-    if 'aux_parent2' in globals():
-        del aux_parent2
     if 'aux_mutated1' in globals():
         del aux_mutated1
     if 'aux_mutated2' in globals():
