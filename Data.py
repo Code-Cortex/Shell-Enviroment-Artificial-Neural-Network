@@ -46,7 +46,6 @@ highest_fitness = -(max_cmd * length_penalty)
 term_out = ''
 prev_cmd = ''
 error_count = 0
-crossover_iterations = round(((hidden_layers * layer_neurons) // 10), -1)
 global e
 mutation_max = round(1 - (mutation_max / 100), 2)
 mutation_min = round(1 - (mutation_min / 100), 2)
@@ -124,10 +123,11 @@ def model_crossover():
 
     new_weight1 = weight1
     new_weight2 = weight2
-    for i in range(crossover_iterations):
-        gene = random.randint(0, len(new_weight1) - 1)
-        new_weight1[gene] = weight2[gene]
-        new_weight2[gene] = weight1[gene]
+    for i in range(len(new_weights)):
+        if random.uniform(0, 1) > .9:
+            gene = random.randint(0, len(new_weight1) - 1)
+            new_weight1[gene] = weight2[gene]
+            new_weight2[gene] = weight1[gene]
     return np.asarray([new_weight1, new_weight2])
 
 
@@ -137,10 +137,11 @@ def aux_crossover():
     aux_new1 = aux_weight1
     aux_new2 = aux_weight2
 
-    for i in range(crossover_iterations):
-        gene = random.randint(0, len(aux_new1) - 1)
-        aux_new1[gene] = aux_weight2[gene]
-        aux_new2[gene] = aux_weight1[gene]
+    for i in range(len(aux_weights)):
+        if random.uniform(0, 1) > .9:
+            gene = random.randint(0, len(aux_new1) - 1)
+            aux_new1[gene] = aux_weight2[gene]
+            aux_new2[gene] = aux_weight1[gene]
     return np.asarray([aux_new1, aux_new2])
 
 
