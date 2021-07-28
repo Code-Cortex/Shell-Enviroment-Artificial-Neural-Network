@@ -30,7 +30,7 @@ model_num = 0
 total_models = 50
 starting_fitness = 0
 # maximum and minimum percentage mutated
-mutation_max = 20
+mutation_max = 50
 mutation_min = 10
 mutation_value = nb_actions / 100
 
