@@ -115,11 +115,13 @@ def model_mutate(weights):
 
 
 def model_crossover():
-    global current_pool
+    global current_pool, updated, best_weights
 
     weight1 = current_pool[parent1].get_weights()
-    weight2 = current_pool[parent2].get_weights()
-
+    if updated:
+        weight2 = current_pool[parent2].get_weights()
+    else:
+        weight2 = best_weights
     new_weight1 = weight1
     new_weight2 = weight2
     for i in range(len(new_weights)):
@@ -214,8 +216,6 @@ while True:
 
             for select in range(total_models // 2):
                 cross_over_weights = model_crossover()
-                if not updated:
-                    cross_over_weights[1] = best_weights
                 mutated1 = model_mutate(cross_over_weights[0])
                 mutated2 = model_mutate(cross_over_weights[1])
                 new_weights.append(mutated1)
