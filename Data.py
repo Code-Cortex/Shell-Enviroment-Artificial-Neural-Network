@@ -125,7 +125,7 @@ def model_crossover():
     new_weight1 = weight1
     new_weight2 = weight2
     for i in range(len(new_weights)):
-        if random.uniform(0, 1) > .85:
+        if random.uniform(0, 1) > .75:
             gene = random.randint(0, len(new_weight1) - 1)
             new_weight1[gene] = weight2[gene]
             new_weight2[gene] = weight1[gene]
