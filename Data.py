@@ -45,7 +45,7 @@ aux_parent2 = 0
 fubar_pool = []
 fubar_parent1 = 0
 fubar_parent2 = 0
-fubar_fallback = 2
+fubar_fallback = 10
 
 init = True
 cmd_in = True
@@ -246,9 +246,10 @@ while True:
             for select in range(total_models // 2):
                 if updated:
                     cross_over_weights = model_crossover(main_pool, parent1, parent2)
+                    no_update = 0
                 else:
                     no_update += 1
-                    if no_update != fubar_fallback:
+                    if no_update <= fubar_fallback:
                         cross_over_weights = model_crossover(aux_pool, aux_parent1, aux_parent2)
                     else:
                         if not fubar_pool:
@@ -256,7 +257,7 @@ while True:
                             fubar_parent1 = aux_parent1
                             fubar_parent2 = aux_parent2
                         cross_over_weights = model_crossover(fubar_pool, fubar_parent1, fubar_parent2)
-                        no_update = 0
+                        
                 mutated1 = model_mutate(cross_over_weights[0])
                 mutated2 = model_mutate(cross_over_weights[1])
                 new_weights.append(mutated1)
