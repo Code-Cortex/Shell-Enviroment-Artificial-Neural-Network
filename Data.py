@@ -49,7 +49,6 @@ fubar_fallback = 2
 
 init = True
 cmd_in = True
-randomize = False
 highest_fitness = -(max_cmd * length_penalty)
 term_out = ''
 prev_cmd = ''
@@ -125,22 +124,15 @@ def model_mutate(weights):
     return weights
 
 
-def inject_random():
-    global main_pool
-    for i in range(total_models):
-        if random.uniform(0, 1) > .50:
-            rand = create_model()
-            main_pool[i] = rand
-
-
 def model_crossover(pool, parent_x1, parent_x2):
+
     weight1 = pool[parent_x1].get_weights()
     weight2 = pool[parent_x2].get_weights()
 
     new_weight1 = weight1
     new_weight2 = weight2
     for i in range(len(new_weight1)):
-        if random.uniform(0, 1) > .90:
+        if random.uniform(0, 1) > .85:
             gene = random.randint(0, len(new_weight1) - 1)
             new_weight1[gene] = weight2[gene]
             new_weight2[gene] = weight1[gene]
@@ -244,7 +236,7 @@ while True:
                     cross_over_weights = model_crossover(main_pool, parent1, parent2)
                 else:
                     no_update += 1
-                    if no_update == fubar_fallback:
+                    if no_update != fubar_fallback:
                         cross_over_weights = model_crossover(aux_pool, aux_parent1, aux_parent2)
                     else:
                         if not fubar_pool:
@@ -252,7 +244,6 @@ while True:
                             fubar_parent1 = aux_parent1
                             fubar_parent2 = aux_parent2
                         cross_over_weights = model_crossover(fubar_pool, fubar_parent1, fubar_parent2)
-                        randomize = True
                         no_update = 0
                 mutated1 = model_mutate(cross_over_weights[0])
                 mutated2 = model_mutate(cross_over_weights[1])
@@ -263,9 +254,6 @@ while True:
                 fitness[reset] = starting_fitness
             for select in range(len(new_weights)):
                 main_pool[select].set_weights(new_weights[select])
-            if randomize:
-                inject_random()
-                randomize = False
             cleanup()
             save_pool()
 
