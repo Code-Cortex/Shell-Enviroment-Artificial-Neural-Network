@@ -124,14 +124,6 @@ def model_mutate(weights):
     return weights
 
 
-def inject_random():
-    global main_pool
-    for i in range(total_models):
-        if random.uniform(0, 1) > .75:
-            rand = create_model()
-            main_pool[i] = rand
-            
-
 def model_crossover(pool, parent_x1, parent_x2):
 
     weight1 = pool[parent_x1].get_weights()
@@ -262,7 +254,6 @@ while True:
                 fitness[reset] = starting_fitness
             for select in range(len(new_weights)):
                 main_pool[select].set_weights(new_weights[select])
-            inject_random()
             cleanup()
             save_pool()
 
