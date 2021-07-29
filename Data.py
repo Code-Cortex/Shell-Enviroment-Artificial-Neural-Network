@@ -125,7 +125,6 @@ def model_mutate(weights):
 
 
 def model_crossover(pool, parent_x1, parent_x2):
-
     weight1 = pool[parent_x1].get_weights()
     weight2 = pool[parent_x2].get_weights()
 
@@ -137,6 +136,14 @@ def model_crossover(pool, parent_x1, parent_x2):
             new_weight1[gene] = weight2[gene]
             new_weight2[gene] = weight1[gene]
     return np.asarray([new_weight1, new_weight2])
+
+
+def init_pool():
+    global main_pool
+    for i in range(total_models):
+        model = create_model()
+        fitness.append(starting_fitness)
+        main_pool.append(model)
 
 
 def cleanup():
@@ -173,10 +180,7 @@ while True:
                 main_pool.append(load_model("SavedModels/model_new" + str(i) + ".keras"))
                 fitness.append(starting_fitness)
         else:
-            for i in range(total_models):
-                model = create_model()
-                fitness.append(starting_fitness)
-                main_pool.append(model)
+            init_pool()
 
         while True:
             while model_num < total_models:
@@ -204,6 +208,10 @@ while True:
                 if fitness[select] >= highest_fitness:
                     updated = True
                     highest_fitness = fitness[select]
+            if highest_fitness < 0:
+                main_pool = []
+                init_pool()
+                continue
 
             parent1 = random.randint(0, total_models - 1)
             parent2 = random.randint(0, total_models - 1)
