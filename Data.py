@@ -42,7 +42,7 @@ main_pool = []
 fitness = []
 aux_pool = []
 aux_parent1 = 0
-aux_parent2 = 0 
+aux_parent2 = 0
 fubar_pool = []
 fubar_parent1 = 0
 fubar_parent2 = 0
@@ -226,7 +226,7 @@ while True:
                     fubar_parent1 = parent1
                     fubar_parent2 = parent2
                     update_count = 0
-                
+
             else:
                 if mutation_rate > mutation_max:
                     mutation_rate -= .01
@@ -237,7 +237,7 @@ while True:
                     no_update = 0
                 else:
                     no_update += 1
-                    if no_update < emergency_fallback:
+                    if no_update <= emergency_fallback:
                         cross_over_weights = model_crossover(aux_pool, aux_parent1, aux_parent2)
                     else:
                         cross_over_weights = model_crossover(fubar_pool, fubar_parent1, fubar_parent2)
