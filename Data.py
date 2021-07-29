@@ -265,6 +265,7 @@ while True:
                 main_pool[select].set_weights(new_weights[select])
             if randomize:
                 inject_random()
+                randomize = False
             cleanup()
             save_pool()
 
