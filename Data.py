@@ -55,7 +55,6 @@ prev_cmd = ''
 error_count = 0
 update_count = 0
 no_update = 0
-total_fitness = 0
 global e
 mutation_max = round(1 - (mutation_max / 100), 2)
 mutation_min = round(1 - (mutation_min / 100), 2)
@@ -205,6 +204,7 @@ while True:
             model_num = 0
 
             updated = False
+            total_fitness = 0
             for select in range(total_models):
                 total_fitness += fitness[select]
             avg_fitness = total_fitness / total_models
