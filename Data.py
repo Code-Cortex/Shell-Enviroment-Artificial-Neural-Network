@@ -239,6 +239,10 @@ while True:
                     if no_update <= fubar_fallback:
                         cross_over_weights = model_crossover(aux_pool, aux_parent1, aux_parent2)
                     else:
+                        if not fubar_pool:
+                            fubar_pool = aux_pool
+                            fubar_parent1 = aux_parent1
+                            fubar_parent2 = aux_parent2
                         cross_over_weights = model_crossover(fubar_pool, fubar_parent1, fubar_parent2)
                         no_update = 0
                 mutated1 = model_mutate(cross_over_weights[0])
