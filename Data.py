@@ -30,9 +30,9 @@ model_num = 0
 total_models = 50
 starting_fitness = 0
 # maximum and minimum percentage mutated
-mutation_max = 20
+mutation_max = 50
 mutation_min = 10
-mutation_value = .5
+mutation_value = .01
 
 # variable assignment
 new_weights = []
@@ -200,15 +200,14 @@ while True:
 
             parent1 = random.randint(0, total_models - 1)
             parent2 = random.randint(0, total_models - 1)
-
             for i in range(total_models):
                 if fitness[i] >= fitness[parent1]:
                     parent1 = i
-
             for j in range(total_models):
                 if j != parent1:
                     if fitness[j] >= fitness[parent2]:
                         parent2 = j
+            
             if updated:
                 aux_pool = current_pool
                 aux_parent1 = parent1
@@ -217,7 +216,7 @@ while True:
             else:
                 if mutation_rate > mutation_max:
                     mutation_rate -= .01
-                    
+
             for select in range(total_models // 2):
                 if updated:
                     cross_over_weights = model_crossover(current_pool, parent1, parent2)
