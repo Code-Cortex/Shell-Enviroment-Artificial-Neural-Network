@@ -59,7 +59,6 @@ prev_cmd = ''
 global e
 
 
-
 def term_interact():
     global term_out, cmd, prev_cmd
     if cmd_in:
