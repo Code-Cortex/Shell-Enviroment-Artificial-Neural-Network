@@ -1,260 +1,196 @@
 from keras.models import Sequential, load_model, save_model
-from keras.layers import GRU, Dense
-from pathlib import Path
-from shutil import rmtree
-from subprocess import Popen, PIPE, STDOUT, TimeoutExpired
-import numpy as np
-import tensorflow as tf
+from keras.layers import Dense, GRU, Dropout
+from keras.optimizers import Adam
+from collections import deque
 import random
-from gc import collect
-from keras.backend import clear_session
-from datetime import datetime
+import numpy as np
+from pathlib import Path
+from subprocess import Popen, PIPE, STDOUT, TimeoutExpired
 
-tf.get_logger().setLevel('ERROR')
+DISCOUNT = 0.99
+REPLAY_MEMORY_SIZE = 50_000  # How many last steps to keep for model training
+MIN_REPLAY_MEMORY_SIZE = 100000  # Minimum number of steps in a memory to start training
+MINIBATCH_SIZE = 1000  # How many steps (samples) to use for training
+UPDATE_TARGET_EVERY = 5  # Update Target model after x steps
+MEMORY_FRACTION = 0.20
 
-# env adjustments
-cmd = 'echo Hello World!'
-length_penalty = .25
-learning_reward = 1
-variety_reward = 5
-max_cmd = 100
-blank_penalty = max_cmd * length_penalty
+# Exploration settings
+epsilon = 1
+EPSILON_DECAY = 0.99975
+MIN_EPSILON = 0
 
-# model adjustments
-hidden_layers = 32
-layer_neurons = 128
-nb_actions = 96
-
-# training adjustments
-total_models = 24
-starting_fitness = 0
-# maximum and minimum percentage mutated
-mutation_max = 50
-mutation_min = 25
-
-# variable assignment
-new_weights = []
-aux_weights = []
-main_pool = []
-fitness = []
-aux_pool = []
-aux_parent1 = 0
-aux_parent2 = 0
-model_num = 0
-error_count = 0
-mutation_rate = mutation_min
-mutation_value = nb_actions / 100
-highest_fitness = -(max_cmd * length_penalty)
-mutation_max = round(1 - (mutation_max / 100), 2)
-mutation_min = round(1 - (mutation_min / 100), 2)
-init = True
-cmd_in = True
-term_out = ''
-prev_cmd = ''
-global e
+# Model settings
+HIDDEN_LAYERS = 32
+LAYER_NEURONS = 128
+NB_ACTIONS = 96
+SAVE_INTERVAL = 5
 
 
-def term_interact():
-    global term_out, cmd, prev_cmd
-    if cmd_in:
-        term_out = ''
-        prev_cmd = ''
-        if not cmd:
-            fitness[model_num] -= blank_penalty
-        proc = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True)
-        cmd = ''
-        try:
-            stdout = proc.communicate(timeout=5)[0].decode()
-            exitcode = proc.returncode
-        except TimeoutExpired:
-            proc.kill()
-            stdout = proc.communicate()[0].decode()
-            exitcode = proc.returncode
-        term_out = ''.join(char for char in stdout if char.isprintable())
-        input_data = term_out + ' ' + str(Path.cwd()) + '> '
-        filename = Path('mem.txt')
-        filename.touch(exist_ok=True)
-        if not init:
+class TermENV:
+
+    def __init__(self):
+        self.range = .48
+        self.NB_ACTIONS = 96
+        self.array_len = 100000
+        self.length_penalty = .5
+        self.learning_reward = 1
+        self.variety_reward = 1
+        self.max_cmd = 100
+        self.blank_penalty = self.max_cmd * self.length_penalty
+        self.reset()
+
+    def step(self, action):
+        enc_ascii = action + 32
+        if len(self.cmd) < self.max_cmd:
+            if enc_ascii != 127:
+                self.cmd += chr(enc_ascii)
+                self.cmd_in = False
+            else:
+                self.cmd_in = True
+        else:
+            self.cmd_in = True
+        if self.cmd_in:
+            if not self.cmd:
+                self.reward -= self.blank_penalty
+            proc = Popen(self.cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True)
+            self.cmd = ''
+            try:
+                stdout = proc.communicate(timeout=5)[0].decode()
+                exitcode = proc.returncode
+            except TimeoutExpired:
+                proc.kill()
+                stdout = proc.communicate()[0].decode()
+                exitcode = proc.returncode
+            self.term_out = ''.join(char for char in stdout if char.isprintable())
+            input_data = self.term_out + ' ' + str(Path.cwd()) + '> '
+            filename = Path('mem.txt')
+            filename.touch(exist_ok=True)
             if exitcode == 0:
                 with open('mem.txt', 'r+') as mem:
                     for line in stdout.splitlines():
                         if line + '\n' not in mem:
                             mem.write(line + '\n')
-                            fitness[model_num] += learning_reward
-        print('\n')
-        print(stdout)
-        print(str(Path.cwd()) + '> ', end='', flush=True)
-    else:
-        input_data = term_out + ' ' + str(Path.cwd()) + '> ' + cmd
-        print(input_data[-1], end='', flush=True)
-        if prev_cmd:
-            if cmd[-1] not in prev_cmd:
-                fitness[model_num] += variety_reward
-        prev_cmd = cmd
-        if not init:
-            fitness[model_num] -= length_penalty
-    neural_input = np.atleast_3d((np.frombuffer(input_data.encode(), dtype=np.uint8) - 31) / 100)
-    return neural_input
-
-
-def create_model():
-    model = Sequential()
-    for layer in range(hidden_layers):
-        model.add(GRU(layer_neurons, name='GRU' + str(layer), return_sequences=True))
-    model.add(GRU(layer_neurons, name='GRU' + str(hidden_layers)))
-    model.add(Dense(nb_actions, name='output', activation='softmax'))
-    model.compile(loss='mse', optimizer='adam')
-    return model
-
-
-def model_mutate(weights):
-    global mutation_rate
-    for i in range(len(weights)):
-        for j in range(len(weights[i])):
-            if random.uniform(0, 1) > mutation_rate:
-                change = random.uniform(-mutation_value, mutation_value)
-                weights[i][j] += change
-    return weights
-
-
-def model_crossover(pool, parent_x1, parent_x2):
-    weight1 = pool[parent_x1].get_weights()
-    weight2 = pool[parent_x2].get_weights()
-
-    new_weight1 = weight1
-    new_weight2 = weight2
-    for i in range(len(new_weight1)):
-        if random.uniform(0, 1) > .90:
-            gene = random.randint(0, len(new_weight1) - 1)
-            new_weight1[gene] = weight2[gene]
-            new_weight2[gene] = weight1[gene]
-    return np.asarray([new_weight1, new_weight2])
-
-
-def init_pool():
-    global main_pool
-    for i in range(total_models):
-        model = create_model()
-        fitness.append(starting_fitness)
-        main_pool.append(model)
-
-
-def cleanup():
-    global mutated1, mutated2, new_weights, parent1, parent2, cross_over_weights, prediction, action, enc_ascii
-    if 'mutated1' in globals():
-        del mutated1
-    if 'mutated2' in globals():
-        del mutated2
-    if 'parent1' in globals():
-        del parent1
-    if 'parent2' in globals():
-        del parent2
-    if 'cross_over_weights' in globals():
-        del cross_over_weights
-
-    del new_weights, prediction, action, enc_ascii
-    new_weights = []
-    clear_session()
-    collect()
-
-
-def save_pool():
-    if Path("SavedModels/").is_dir():
-        rmtree("SavedModels/")
-    Path("SavedModels/").mkdir(parents=True, exist_ok=True)
-    for xi in range(total_models):
-        save_model(main_pool[xi], "SavedModels/model_new" + str(xi) + ".keras")
-
-
-while True:
-    try:
-        if Path("SavedModels/").is_dir():
-            for i in range(total_models):
-                main_pool.append(load_model("SavedModels/model_new" + str(i) + ".keras"))
-                fitness.append(starting_fitness)
+                            self.reward += self.learning_reward
+            print('\n')
+            print(stdout)
+            print(str(Path.cwd()) + '> ', end='', flush=True)
         else:
-            init_pool()
+            input_data = self.term_out + ' ' + str(Path.cwd()) + '> ' + self.cmd
+            print(input_data[-1], end='', flush=True)
+            if self.prev_cmd:
+                if self.cmd[-1] not in self.prev_cmd:
+                    self.reward += self.variety_reward
+            self.prev_cmd = self.cmd
+            self.reward -= self.length_penalty
+        idxs = np.swapaxes((np.atleast_2d((np.frombuffer(input_data.encode(), dtype=np.uint8) - 31) / 100)), 0, 1)
+        if idxs.shape[0] < self.array_len:
+            self.observation = np.append(idxs, np.zeros(((self.array_len - idxs.shape[0]), 1)), axis=0)
+        else:
+            self.observation = np.resize(idxs, (1, self.array_len))
+        return self.observation, self.reward, self.cmd_in
 
-        while True:
-            while model_num < total_models:
-                if fitness[model_num] == -(max_cmd * length_penalty):
-                    main_pool[model_num] = create_model()
-                    fitness[model_num] = 0
-                prediction = main_pool[model_num].predict(term_interact(), batch_size=1)
-                init = False
-                action = np.argmax(prediction)
-                enc_ascii = action + 32
-                if len(cmd) < max_cmd:
-                    if enc_ascii != 127:
-                        cmd += chr(enc_ascii)
-                        cmd_in = False
-                        continue
-                    else:
-                        cmd_in = True
-                        if fitness[model_num] != -(max_cmd * length_penalty):
-                            model_num += 1
-                        continue
-                else:
-                    cmd_in = True
-                    if fitness[model_num] != -(max_cmd * length_penalty):
-                        model_num += 1
-                    continue
-            model_num = 0
+    def reset(self):
+        idxs = np.swapaxes(
+            (np.atleast_2d((np.frombuffer((str(Path.cwd()) + '> ').encode(), dtype=np.uint8) - 31) / 100)), 0, 1)
+        if idxs.shape[0] < self.array_len:
+            self.observation = np.append(idxs, np.zeros(((self.array_len - idxs.shape[0]), 1)), axis=0)
+        else:
+            self.observation = np.resize(idxs, (1, self.array_len))
+        self.reward = 0
+        self.term_out = ''
+        self.prev_cmd = ''
+        self.cmd = ''
+        return self.observation
 
-            updated = False
-            total_fitness = 0
-            for select in range(total_models):
-                total_fitness += fitness[select]
-            avg_fitness = total_fitness / total_models
-            if avg_fitness >= highest_fitness:
-                updated = True
-                highest_fitness = avg_fitness
 
-            parent1 = random.randint(0, total_models - 1)
-            parent2 = random.randint(0, total_models - 1)
-            for i in range(total_models):
-                if fitness[i] >= fitness[parent1]:
-                    parent1 = i
-            for j in range(total_models):
-                if j != parent1:
-                    if fitness[j] >= fitness[parent2]:
-                        parent2 = j
+env = TermENV()
 
-            if updated:
-                aux_pool = main_pool
-                aux_parent1 = parent1
-                aux_parent2 = parent2
-                mutation_rate = mutation_min
+
+class DQNAgent:
+    def __init__(self):
+
+        self.model = self.create_model()
+
+        self.target_model = self.create_model()
+        self.target_model.set_weights(self.model.get_weights())
+
+        self.replay_memory = deque(maxlen=REPLAY_MEMORY_SIZE)
+
+        self.target_update_counter = 0
+
+    def create_model(self):
+        model = Sequential()
+        model.add(GRU(LAYER_NEURONS, name='INPUT', input_shape=env.observation.shape, return_sequences=True))
+        for layer in range(HIDDEN_LAYERS):
+            model.add(GRU(LAYER_NEURONS, name='GRU' + str(layer), return_sequences=True))
+            model.add(Dropout(.25, name='Dropout' + str(layer)))
+        model.add(GRU(LAYER_NEURONS, name='GRU' + str(HIDDEN_LAYERS)))
+        model.add(Dense(NB_ACTIONS, name='output', activation='softmax'))
+        model.compile(loss="mse", optimizer=Adam(learning_rate=0.001), metrics=['accuracy'])
+        return model
+
+    def update_replay_memory(self, transition):
+        self.replay_memory.append(transition)
+
+    def train(self, terminal_state):
+
+        if len(self.replay_memory) < MIN_REPLAY_MEMORY_SIZE:
+            return
+
+        minibatch = random.sample(self.replay_memory, MINIBATCH_SIZE)
+
+        current_states = np.array([transition[0] for transition in minibatch]) / 255
+        current_qs_list = self.model.predict(current_states)
+
+        new_current_states = np.array([transition[3] for transition in minibatch]) / 255
+        future_qs_list = self.target_model.predict(new_current_states)
+        X = []
+        y = []
+
+        for index, (current_state, action, reward, new_current_state, done) in enumerate(minibatch):
+            if not done:
+                max_future_q = np.max(future_qs_list[index])
+                new_q = reward + DISCOUNT * max_future_q
             else:
-                if mutation_rate > mutation_max:
-                    mutation_rate -= .01
+                new_q = reward
+            current_qs = current_qs_list[index]
+            current_qs[action] = new_q
+            X.append(current_state)
+            y.append(current_qs)
+        self.model.fit(np.array(X) / 255, np.array(y), batch_size=MINIBATCH_SIZE, verbose=0, shuffle=False)
+        if terminal_state:
+            self.target_update_counter += 1
+        if self.target_update_counter > UPDATE_TARGET_EVERY:
+            self.target_model.set_weights(self.model.get_weights())
+            self.target_update_counter = 0
 
-            for select in range(total_models // 2):
-                if updated:
-                    cross_over_weights = model_crossover(main_pool, parent1, parent2)
-                else:
-                    cross_over_weights = model_crossover(aux_pool, aux_parent1, aux_parent2)
-                mutated1 = model_mutate(cross_over_weights[0])
-                mutated2 = model_mutate(cross_over_weights[1])
-                new_weights.append(mutated1)
-                new_weights.append(mutated2)
+    def get_qs(self, state):
+        return self.model.predict(np.array(state).reshape(-1, *state.shape) / 255)[0]
 
-            for reset in range(total_models):
-                fitness[reset] = starting_fitness
-            for select in range(len(new_weights)):
-                main_pool[select].set_weights(new_weights[select])
-            cleanup()
-            save_pool()
 
-    except Exception as e:
-        logfile = Path('error_log.txt')
-        logfile.touch(exist_ok=True)
-        with open("error_log.txt", "a") as log:
-            log.write(str(datetime.now()) + ' ' + str(e))
-            log.write('\n')
-        error_count += 1
-        if error_count <= 10:
-            continue
-        else:
-            print(e)
-            break
+agent = DQNAgent()
+if Path('Model').is_file():
+    agent.model = load_model('Model.keras')
+current_state = env.reset()
+save = 0
+while True:
+
+    if random.uniform(0, 1) > epsilon:
+        action = np.argmax(agent.get_qs(current_state))
+    else:
+        # Get random action
+        action = np.random.randint(0, env.NB_ACTIONS)
+    new_state, reward, done = env.step(action)
+
+    agent.update_replay_memory((current_state, action, reward, new_state))
+    agent.train(done)
+    current_state = new_state
+    if done:
+        save += 1
+    if save > SAVE_INTERVAL:
+        save_model(agent.model, 'Model.keras')
+        save = 0
+
+    if epsilon > MIN_EPSILON:
+        epsilon *= EPSILON_DECAY
+        epsilon = max(MIN_EPSILON, epsilon)
