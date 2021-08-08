@@ -121,7 +121,7 @@ class DQNAgent:
 
     def create_model(self):
         model = Sequential()
-        model.add(GRU(env.array_len, name='INPUT', input_shape=env.observation.shape, return_sequences=True))
+        model.add(GRU(LAYER_NEURONS, name='INPUT', input_shape=env.observation.shape, return_sequences=True))
         for layer in range(HIDDEN_LAYERS):
             model.add(GRU(LAYER_NEURONS, name='GRU' + str(layer), return_sequences=True))
         model.add(GRU(LAYER_NEURONS, name='GRU' + str(HIDDEN_LAYERS)))
