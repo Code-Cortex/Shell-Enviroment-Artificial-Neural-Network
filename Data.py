@@ -5,6 +5,7 @@ from collections import deque
 import random
 import numpy as np
 from pathlib import Path
+from shutil import rmtree
 from subprocess import Popen, PIPE, STDOUT, TimeoutExpired
 
 DISCOUNT = 0.99
@@ -126,7 +127,7 @@ class DQNAgent:
             model.add(Dropout(.25, name='Dropout' + str(layer)))
         model.add(GRU(LAYER_NEURONS, name='GRU' + str(HIDDEN_LAYERS)))
         model.add(Dense(NB_ACTIONS, name='output', activation='softmax'))
-        model.compile(loss="mse", optimizer=Adam(learning_rate=0.001), metrics=['accuracy'])
+        model.compile(loss='mse', optimizer=Adam(learning_rate=0.001), metrics=['accuracy'])
         return model
 
     def update_replay_memory(self, transition):
@@ -170,11 +171,10 @@ class DQNAgent:
 
 agent = DQNAgent()
 if Path('Model').is_file():
-    agent.model = load_model('Model.keras')
+    agent.model = load_model('SavedModel/Model.keras')
 current_state = env.reset()
 save = 0
 while True:
-
     if random.uniform(0, 1) > epsilon:
         action = np.argmax(agent.get_qs(current_state))
     else:
@@ -188,10 +188,11 @@ while True:
     if done:
         save += 1
     if save > SAVE_INTERVAL:
-        if Path('Model').is_file():
-            Path('Model').unlink()
-        save_model(agent.model, 'Model.keras')
-        save = 0
+        if Path('SavedModel/').is_dir():
+            rmtree('SavedModel/')
+        Path('SavedModel/').mkdir(parents=True, exist_ok=True)
+        save_model(agent.model, 'SavedModel/Model.keras')
+    save = 0
 
     if epsilon > MIN_EPSILON:
         epsilon *= EPSILON_DECAY
