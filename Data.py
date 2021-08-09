@@ -99,6 +99,7 @@ class TermENV:
         else:
             self.observation = np.resize(idxs, (1, self.array_len))
         self.reward = 0
+        self.prev_reward = 0
         self.term_out = ''
         self.prev_cmd = ''
         self.cmd = ''
