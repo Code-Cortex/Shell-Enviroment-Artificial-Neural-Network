@@ -18,7 +18,7 @@ MEMORY_FRACTION = 0.20
 # Exploration settings
 epsilon = 1
 EPSILON_DECAY = 0.99975
-MIN_EPSILON = 0
+MIN_EPSILON = 0.001
 
 # Model settings
 NB_ACTIONS = 96
