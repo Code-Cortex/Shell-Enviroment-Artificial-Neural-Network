@@ -32,7 +32,7 @@ class TermENV:
     def __init__(self):
         self.range = .48
         self.NB_ACTIONS = 96
-        self.array_len = 100000
+        self.array_len = 10000
         self.length_penalty = .5
         self.learning_reward = 1
         self.variety_reward = 1
