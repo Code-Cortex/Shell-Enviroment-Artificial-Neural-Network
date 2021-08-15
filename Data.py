@@ -16,8 +16,7 @@ UPDATE_TARGET_EVERY = 5  # Update Target model after x steps
 
 # Exploration settings
 epsilon = 1
-EPSILON_DECAY = 0.99975
-EPSILON_REGEN = 1.00025
+EPSILON_DECAY = 0.999975
 MIN_EPSILON = 0.001
 
 # Model settings
