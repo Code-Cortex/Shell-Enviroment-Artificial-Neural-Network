@@ -201,5 +201,3 @@ while True:
     if epsilon > MIN_EPSILON:
             epsilon *= EPSILON_DECAY
             epsilon = max(MIN_EPSILON, epsilon)
-    if reward < 0:
-        epsilon = 1
