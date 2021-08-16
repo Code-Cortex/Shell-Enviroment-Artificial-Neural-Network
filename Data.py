@@ -80,7 +80,8 @@ class TermENV:
         if idxs.shape[0] < self.array_len:
             self.observation = np.append(idxs, np.zeros(((self.array_len - idxs.shape[0]), 1)), axis=0)
         else:
-            self.observation = np.resize(idxs, (1, self.array_len))
+            self.observation = np.resize(idxs, (self.array_len, 1))
+        print(self.observation.shape)
         return self.observation, self.reward, self.cmd_in
 
     def reset(self):
@@ -88,7 +89,7 @@ class TermENV:
         if idxs.shape[0] < self.array_len:
             self.observation = np.append(idxs, np.zeros(((self.array_len - idxs.shape[0]), 1)), axis=0)
         else:
-            self.observation = np.resize(idxs, (1, self.array_len))
+            self.observation = np.resize(idxs, (self.array_len, 1))
         self.reward = 0
         self.term_out = ''
         self.prev_cmd = ''
@@ -172,7 +173,6 @@ class DQNAgent:
 agent = DQNAgent()
 if Path("SavedModel/").is_dir():
     agent.model = load_model('SavedModel/Model.keras')
-    epsilon = .001
 current_state = env.reset()
 save = 0
 while True:
