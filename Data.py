@@ -81,7 +81,6 @@ class TermENV:
             self.observation = np.append(idxs, np.zeros(((self.array_len - idxs.shape[0]), 1)), axis=0)
         else:
             self.observation = np.resize(idxs, (self.array_len, 1))
-        print(self.observation.shape)
         return self.observation, self.reward, self.cmd_in
 
     def reset(self):
