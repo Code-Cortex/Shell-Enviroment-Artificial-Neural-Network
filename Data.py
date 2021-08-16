@@ -44,7 +44,6 @@ class TermENV:
         else:
             self.cmd_in = True
         if self.cmd_in:
-            self.reward = 0
             if not self.cmd:
                 self.reward -= self.blank_penalty
             proc = Popen(self.cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT, close_fds=True)
@@ -187,6 +186,7 @@ while True:
     agent.train(done)
     current_state = new_state
     if done:
+        env.reward = 0
         save += 1
     if save > SAVE_INTERVAL:
         if Path('SavedModel/').is_dir():
